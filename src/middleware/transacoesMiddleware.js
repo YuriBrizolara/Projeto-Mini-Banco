@@ -1,13 +1,13 @@
-const pool = require('../conexao');
+const knex = require('../conexao');
 const transacaoId = async (req,res,next) =>{
     const {id}= req.usuario;
     try {
-        const { rows } = await pool.query(
-            'select * from transacoes where usuario_id = $1',
-            [id]
-        );
-        req.transacaoId = rows
-        next()
+        const transacoes = await knex('transacoes')
+            .select('*')
+            .where('usuario_id', id);
+
+        req.transacaoId = transacoes;
+        next();
     } catch (error) {
         return res.status(400).json({mensagem: 'Erro ao conseguir todas transações do ID'}); 
     }
