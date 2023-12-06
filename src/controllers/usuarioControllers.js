@@ -1,6 +1,5 @@
 const knex = require('../conexao');
 const jwt = require('jsonwebtoken');
-const senhaJwt = require('../senhaJwt');
 const cadastrarUsuario = async (req, res) => {
 	const { nome, email } = req.body
 	const senhaCriptografada = req.senhaCriptografada
@@ -24,7 +23,7 @@ const login = async (req, res) => {
 	try {
         const loginUsuario = await knex('usuarios').where({ email }).first();
         const { senha, ...usuario } = loginUsuario;
-		const token = jwt.sign({ id: usuario.id }, senhaJwt, { expiresIn: '8h' });
+		const token = jwt.sign({ id: usuario.id }, process.env.CHAVE_PRIVADA_JWT, { expiresIn: '8h' });
 		return res.status(200).json({
 			usuario,
 			token,

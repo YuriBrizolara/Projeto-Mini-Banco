@@ -1,7 +1,7 @@
 const knex = require('../conexao');
 const validator = require("email-validator");
 const bcrypt = require('bcrypt');
-const senhaJwt = require('../senhaJwt');
+
 const jwt = require('jsonwebtoken');
 
 const validarNome = async (req, res, next) => {
@@ -93,7 +93,7 @@ const verificarToken = async (req, res, next) => {
   const token = authorization.split(' ')[1];
 
   try {
-    const { id } = jwt.verify(token, senhaJwt);
+    const { id } = jwt.verify(token, process.env.CHAVE_PRIVADA_JWT);
     const usuario = await knex('usuarios').where('id', id).first();
 
     if (!usuario) {
