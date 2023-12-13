@@ -1,51 +1,6 @@
 const knex = require('../conexao');
-const validator = require("email-validator");
-const bcrypt = require('bcrypt');
-
 const jwt = require('jsonwebtoken');
-
-const validarNome = async (req, res, next) => {
-  const { nome } = req.body;
-
-  if (!nome) {
-    return res.status(400).json({ mensagem: 'O campo nome é obrigatório' });
-  }
-  next();
-};
-
-const validarEmail = async (req, res, next) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ mensagem: 'O campo email é obrigatório' });
-  }
-
-  if (!validator.validate(email)) {
-    return res.status(400).json({ mensagem: 'E-mail não é válido' });
-  }
-
-  try {
-    const emailExiste = await knex('usuarios').where({ email }).first();
-
-    if (emailExiste) {
-      return res.status(400).json({ mensagem: 'Já existe usuário cadastrado com o e-mail informado.' });
-    }
-  } catch (error) {
-    return res.status(500).json({ mensagem: 'Erro ao verificar o email', error });
-  }
-
-  next();
-};
-
-const validarSenha = async (req, res, next) => {
-  const { senha } = req.body;
-
-  if (!senha) {
-    return res.status(400).json({ mensagem: 'O campo senha é obrigatório' });
-  }
-
-  next();
-};
+const bcrypt = require('bcrypt');
 
 const criptografarSenha = async (req, res, next) => {
   const { senha } = req.body;
@@ -82,30 +37,36 @@ const verificarLogin = async (req, res, next) => {
 
   next();
 };
-
 const verificarToken = async (req, res, next) => {
-  const { authorization } = req.headers;
-
-  if (!authorization) {
-    return res.status(401).json({ mensagem: 'Token inválido' });
-  }
-
-  const token = authorization.split(' ')[1];
-
-  try {
-    const { id } = jwt.verify(token, process.env.CHAVE_PRIVADA_JWT);
-    const usuario = await knex('usuarios').where('id', id).first();
-
-    if (!usuario) {
-      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    const { authorization } = req.headers;
+    if (!authorization) {
+        return res.status(401).json({ mensagem: 'Token inválido' });
     }
+    const token = authorization.split(' ')[1];
+    try {
+        const { id } = jwt.verify(token, process.env.CHAVE_PRIVADA_JWT);
+        const usuarioEncontrado = await knex('usuarios').where({ id }).first();
+        if (!usuarioEncontrado) {
+            return res.status(404).json('Usuario não encontrado');
+        }
+        const { senha, ...usuario } = usuarioEncontrado;
+        req.usuario = usuario;
+        next();
+    } catch (error) {
+        return res.status(401).json({ mensagem: 'Usuario não autorizado' });
+    }
+};
 
-    req.usuario = usuario;
-  } catch (error) {
-    return res.status(401).json({ mensagem: 'Token inválido', error });
-  }
-
-  next();
+const validarDados = schema => async (req, res, next) => {
+    try {
+        await schema.validateAsync(req.body);
+        
+        next();
+    } catch (error) {
+        return res.status(400).json({
+            mensagem: error.message,
+        });
+    }
 };
 
 const perfil = async (req, res) => {
@@ -116,8 +77,6 @@ module.exports = {
   criptografarSenha,
   verificarLogin,
   verificarToken,
-  validarEmail,
-  validarSenha,
-  validarNome,
+  validarDados,
   perfil
 };

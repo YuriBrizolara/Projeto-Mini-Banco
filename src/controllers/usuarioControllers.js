@@ -3,17 +3,20 @@ const jwt = require('jsonwebtoken');
 const cadastrarUsuario = async (req, res) => {
 	const { nome, email } = req.body
 	const senhaCriptografada = req.senhaCriptografada
-	try {		
-        const query = `
-            insert into usuarios (nome, email, senha)
-            values ($1, $2, $3) returning *
-        `
+	try {	
+		const emailExiste = await knex('usuarios').where({ email }).first();
 
-		const { rows } = await knex.query(query, [nome, email, senhaCriptografada]);
-
-		const { senha: _, ...usuario } = rows[0];
-
-		return res.status(201).json(usuario);
+        if (emailExiste) {
+            return res.status(400).json({ mensagem: 'Esse email já existe' });
+        }	
+        const novoUsuario = await knex('usuarios')
+            .insert({
+                nome,
+                email,
+                senha: senhaCriptografada,
+            })
+            .returning(['id', 'nome', 'email']);
+		return res.status(201).json(novoUsuario[0]);
 	} catch (error) {
 		return res.status(500).json({ mensagem: 'Erro no cadastro de usuário' })
 	};

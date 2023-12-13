@@ -1,15 +1,16 @@
 const express = require('express');
-const { validarNome, validarEmail, validarSenha, verificarLogin, verificarToken, criptografarSenha, perfil } = require('../middleware/usuarioMiddleware');
+const { verificarLogin, verificarToken, criptografarSenha, perfil, validarDados } = require('../middleware/usuarioMiddleware');
 const { cadastrarUsuario, login, atualizarCadastro } = require('../controllers/usuarioControllers');
 const listarCategoria = require('../controllers/categoriaControllers');
 const {listarTransacoes, detalharUmaTransacao, cadastrarTransacao, atualizarTransacao, deletarTransacao, obterExtrato} = require('../controllers/transacoesControllers');
 const transacaoId = require('../middleware/transacoesMiddleware');
+const schemaCadastroUsuario = require('../validation/validationUser');
 const rotas = express.Router();
-rotas.post('/usuario',validarNome,validarEmail,validarSenha,criptografarSenha,cadastrarUsuario);
+rotas.post('/usuario',validarDados(schemaCadastroUsuario),criptografarSenha,cadastrarUsuario);
 rotas.post('/login',verificarLogin,login);
 rotas.use(verificarToken)
 rotas.get('/usuario',perfil);
-rotas.put('/usuario',validarNome,validarEmail,validarSenha,criptografarSenha,atualizarCadastro);
+rotas.put('/usuario',validarDados(schemaCadastroUsuario),criptografarSenha,atualizarCadastro);
 rotas.get('/categoria',listarCategoria);
 rotas.use(transacaoId)
 rotas.get('/transacao',listarTransacoes);
